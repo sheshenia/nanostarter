@@ -40,7 +40,7 @@
 <script>
 
     const counterTerminal = document.getElementById("counterTerminal")
-    const conn = new WebSocket("ws://localhost:3000/ping")
+    const conn = new WebSocket("ws://localhost:3000/ngrok_scep")
     conn.onclose = function(evt) {
         const li = document.createElement('li')
         li.textContent = 'Connection closed';

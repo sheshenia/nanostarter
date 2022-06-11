@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"os/exec"
 	"time"
 
@@ -26,8 +27,8 @@ func (c *Command) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	go c.socketWriter(r.Context(), ws)
-	c.socketReader(ws)
+	c.socketWriter(r.Context(), ws)
+
 }
 
 func (c *Command) socketReader(ws *websocket.Conn) {
@@ -66,7 +67,7 @@ func (c *Command) socketWriter(ctx context.Context, ws *websocket.Conn) {
 
 		// this commented block of code works only with some commands
 		// maybe incorrect redirects or smth. tried different variations
-		cmd := exec.CommandContext(ctx, c.pathName(), c.args...)
+		/*cmd := exec.CommandContext(ctx, c.pathName(), c.args...)
 		if c.path != "" && c.path != "./" {
 			cmd.Dir = c.path
 		}
@@ -82,10 +83,10 @@ func (c *Command) socketWriter(ctx context.Context, ws *websocket.Conn) {
 		}
 		if err := cmd.Wait(); err != nil {
 			log.Println(err)
-		}
+		}*/
 
 		// more low-level and complicated solution that works with all commands we need
-		/*outr, outw, err := os.Pipe()
+		outr, outw, err := os.Pipe()
 		if err != nil {
 			internalError(ws, "stdout:", err)
 			return
@@ -99,8 +100,56 @@ func (c *Command) socketWriter(ctx context.Context, ws *websocket.Conn) {
 			return
 		}
 		defer inr.Close()
-		defer inw.Close()*/
+		defer inw.Close()
 
+		_, err = exec.LookPath(c.pathName())
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		cmdPath := c.ProcessName()
+		if c.path == "" {
+			if cmdPath, err = exec.LookPath(c.name); err != nil {
+				log.Println(err)
+				return
+			}
+		}
+		args := append([]string{cmdPath}, c.args...)
+
+		proc, err := os.StartProcess(args[0], args, &os.ProcAttr{
+			Dir:   c.ProcessDir(),
+			Files: []*os.File{inr, outw, outw},
+		})
+		if err != nil {
+			internalError(ws, "start:", err)
+			return
+		}
+		inr.Close()
+		outw.Close()
+
+		go commandLogScanner(ctx, outr, outCh)
+
+		c.socketReader(ws)
+
+		inw.Close()
+
+		if err := proc.Signal(os.Interrupt); err != nil {
+			log.Println("inter:", err)
+		}
+
+		select {
+		case <-ctx.Done():
+		case <-time.After(time.Second):
+			// A bigger bonk on the head.
+			if err := proc.Signal(os.Kill); err != nil {
+				log.Println("term:", err)
+			}
+		}
+
+		if _, err := proc.Wait(); err != nil {
+			log.Println("wait:", err)
+		}
 	}()
 
 	// try to read command logs from outCh and send to websocket

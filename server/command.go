@@ -18,14 +18,15 @@ func init() {
 			WithAlias("scepserver").
 			WithName(fmt.Sprintf("scepserver-%s-%s", runtime.GOOS, runtime.GOARCH)).
 			//WithName("counter").
-			WithPath(fmt.Sprintf(".%s", string(os.PathSeparator))).
-			WithArgs("-allowrenew", "0", "-challenge", "nanomdm", "-debug", "-log-json" /*, "2>&1"*/),
+			WithPath(fmt.Sprintf(".%sscep%[1]s", string(os.PathSeparator))).
+			WithArgs("-allowrenew", "0", "-challenge", "nanomdm", "-debug" /*, "-log-json", "2>&1"*/),
 
 		// ngrok http 8080
+		// ngrok http 8080 --log=stdout
 		NewCommand().
 			WithAlias("ngrok_scep").
 			WithName("ngrok").
-			WithArgs("http", "8080"),
+			WithArgs("http", "8080", "--log=stdout"),
 
 		// ./nanomdm-linux-amd64  -ca ca.pem -api nanomdm -debug
 		NewCommand().
@@ -46,6 +47,10 @@ func init() {
 			WithAlias("ping").
 			WithName("ping").
 			WithArgs("google.com"),
+		NewCommand().
+			WithAlias("counter").
+			WithName("counter").
+			WithPath("./"),
 	}
 }
 
@@ -99,10 +104,23 @@ func (c *Command) WithArgs(args ...string) *Command {
 }
 
 func (c *Command) pathName() string {
+	return c.path + c.name
+	/*if c.path == "" {
+		return c.name
+	}
+	return "./" + c.name*/
+}
+func (c *Command) ProcessName() string {
 	if c.path == "" {
 		return c.name
 	}
 	return "./" + c.name
+}
+func (c *Command) ProcessDir() string {
+	if c.path == "" || c.path == "./" {
+		return ""
+	}
+	return c.path
 }
 
 // pattern use as mux handler pattern
