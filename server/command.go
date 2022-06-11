@@ -2,7 +2,6 @@ package server
 
 import (
 	"fmt"
-	"net/http"
 	"os"
 	"path"
 	"runtime"
@@ -11,20 +10,16 @@ import (
 
 var logCommands []*Command
 
+// populate log commands with default values and args
 func init() {
-	const (
-		osN   = runtime.GOOS
-		archN = runtime.GOARCH
-	)
-
-	//populate log commands with default values and args
 	logCommands = []*Command{
-		// ./scepserver-linux-amd64 -allowrenew 0 -challenge nanomdm -debug
+		// ../scep/scepserver-linux-amd64 -allowrenew 0 -challenge nanomdm -debug
 		NewCommand().
 			WithAlias("scepserver").
 			WithName(fmt.Sprintf("scepserver-%s-%s", runtime.GOOS, runtime.GOARCH)).
-			WithPath("."+string(os.PathSeparator)).
-			WithArgs("-allowrenew", "0", "-challenge", "nanomdm", "-debug"),
+			//WithName("counter").
+			WithPath(fmt.Sprintf(".%s", string(os.PathSeparator))).
+			WithArgs("-allowrenew", "0", "-challenge", "nanomdm", "-debug", "-log-json" /*, "2>&1"*/),
 
 		// ngrok http 8080
 		NewCommand().
@@ -44,6 +39,13 @@ func init() {
 			WithAlias("ngrok_nanomdm").
 			WithName("ngrok").
 			WithArgs("http", "9000"),
+
+		// for tests
+		// ping google.com
+		NewCommand().
+			WithAlias("ping").
+			WithName("ping").
+			WithArgs("google.com"),
 	}
 }
 
@@ -52,11 +54,6 @@ type Command struct {
 	name  string
 	path  string
 	args  []string
-}
-
-func (c *Command) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	//TODO implement me
-	w.Write([]byte(c.alias))
 }
 
 // NewCommand creates Command from string if provided as argument
@@ -68,11 +65,11 @@ func NewCommand(s ...string) *Command {
 	return &Command{}
 }
 
+// NewCommandFromString creates Command from string
+// if empty creates new empty Command
 func NewCommandFromString(s string) *Command {
 	s = strings.TrimSpace(s)
 	cmnd := Command{}
-
-	// if empty string returns empty Command
 	if s == "" {
 		return &cmnd
 	}
@@ -99,4 +96,19 @@ func (c *Command) WithPath(v string) *Command {
 func (c *Command) WithArgs(args ...string) *Command {
 	c.args = args
 	return c
+}
+
+func (c *Command) pathName() string {
+	if c.path == "" {
+		return c.name
+	}
+	return "./" + c.name
+}
+
+// pattern use as mux handler pattern
+func (c *Command) pattern() string {
+	if c.alias != "" {
+		return "/" + c.alias
+	}
+	return "/" + c.name
 }

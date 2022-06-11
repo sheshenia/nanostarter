@@ -22,7 +22,12 @@ func Run(ctx context.Context) error {
 	flag.Parse()
 
 	mux := http.NewServeMux()
-	//TODO handlers here
+	mux.Handle("/", http.FileServer(http.Dir("./client")))
+	//each command has its own websocket handler
+	for _, cmnd := range logCommands {
+		log.Println(cmnd)
+		mux.Handle(cmnd.pattern(), cmnd)
+	}
 
 	server := &http.Server{
 		Addr:    *addr,

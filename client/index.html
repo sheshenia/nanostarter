@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="language" content="English">
+    <meta name="contact" content="pavlo@sheshenia.com">
+    <title>Nanomdm starter</title>
+    <meta name="keywords" content="nanomdm,golang,cli">
+    <meta name="description" content="Професія Web-розробник цікава та добре оплачувана! На цій сторінці ви можете зробити попередній запис на відкриту лекцію, що відбудеться у м.Скадовськ на базі  та за підтримки молодіжного центру LightHouse - дім світлих ідей.">
+    <meta property="og:type" content="business.business"/>
+    <meta property="og:url" content="https://sheshenia.com"/>
+    <meta property="og:title" content="Професія Web-розробник - вільна лекція у м.Скадовськ"/>
+    <meta property="og:site_name" content="sheshenia.com">
+    <meta property="og:image" content="https://webdevskadovsk.sheshenia.com/webdev-table_1800_1200_withtext1.jpg"/>
+    <meta property="business:contact_data:street_address" content="вул. Сергіївська 8 (біля Вічного вогню)"/>
+    <meta property="business:contact_data:locality" content="Скадовськ"/>
+    <meta property="business:contact_data:postal_code" content="75700"/>
+    <meta property="business:contact_data:country_name" content="Україна"/>
+    <meta property="business:contact_data:email"
+          content="pavlo@sheshenia.com"/>
+    <meta property="business:contact_data:phone_number" content='+38-066-458-53-40'/>
+    <meta property="business:contact_data:website" content="https://sheshenia.com"/>
+    <meta property="place:location:latitude" content="46.110698517898314"/>
+    <meta property="place:location:longitude" content="32.90868836077779"/>
+
+    <link href="https://unpkg.com/tailwindcss@2.0.3/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body>
+<h1>New Counter Terminal:</h1>
+<div >
+    <ul id="counterTerminal" style="height:200px;width:600px;border:1px solid #ccc;font:16px/26px Georgia, Garamond, Serif;overflow:auto;">
+
+    </ul>
+    <button id="stopCounterBtn">STOP</button>
+</div>
+
+
+<script>
+
+    const counterTerminal = document.getElementById("counterTerminal")
+    const conn = new WebSocket("ws://localhost:3000/ping")
+    conn.onclose = function(evt) {
+        const li = document.createElement('li')
+        li.textContent = 'Connection closed';
+        counterTerminal.appendChild(li)
+    }
+    conn.onmessage = (event) => {
+        console.log('file updated');
+        const li = document.createElement('li')
+        li.textContent = event.data
+        counterTerminal.appendChild(li)
+        counterTerminal.scroll({ top: counterTerminal.scrollHeight, behavior: 'smooth' });
+    }
+    document.getElementById("stopCounterBtn").addEventListener("click", (event)=>{
+        console.log("try stop")
+        conn.send("stop")
+    })
+
+</script>
+</body>
+</html>
