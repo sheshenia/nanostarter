@@ -24,6 +24,8 @@ func (c *Command) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if _, ok := err.(websocket.HandshakeError); !ok {
 			log.Println(err)
+		} else {
+			log.Println("websocket.HandshakeError:", err)
 		}
 		return
 	}

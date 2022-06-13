@@ -11,10 +11,13 @@ import (
 )
 
 var (
-	addr     = flag.String("addr", ":3000", "http service address")
+	addr     = flag.String("addr", ":8085", "http service address")
 	upgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
+		CheckOrigin: func(_ *http.Request) bool {
+			return true
+		},
 	}
 )
 
@@ -22,7 +25,7 @@ func Run(ctx context.Context) error {
 	flag.Parse()
 
 	mux := http.NewServeMux()
-	mux.Handle("/", http.FileServer(http.Dir("./client")))
+	mux.Handle("/", http.FileServer(http.Dir("./client_")))
 	//each command has its own websocket handler
 	for _, cmnd := range logCommands {
 		log.Println(cmnd)
