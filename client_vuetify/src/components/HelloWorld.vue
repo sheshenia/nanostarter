@@ -23,7 +23,6 @@
       </v-col>
 
       <v-col cols="6">
-<!--        <v-col cols="6" class="d-flex flex-column">-->
         <terminal  v-bind="counterLog">
           <v-btn
               :disabled="counterLog.active || counterLog.inProgress"
@@ -36,7 +35,6 @@
             STOP
           </v-btn>
         </terminal>
-
       </v-col>
 
     </v-row>
