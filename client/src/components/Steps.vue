@@ -1,7 +1,7 @@
 <template>
   <div>
     <div
-        v-for="cmd in allCmd"
+        v-for="cmd in store.allCmd"
         class="step"
         :class="{'step-active': cmd.isActive}"
     >
@@ -32,22 +32,17 @@
   </div>
 </template>
 
-<script>
-import Cmd, {Status} from "../models/cmd";
+<script setup>
+import {useCommandsStore } from "../stores/commands";
 
-export default {
-  name: "Steps",
-  props: {
-    allCmd: {},
-  },
-  computed:{
-  },
-  data(){
-    return{
-      wsEndpoint: window.__WEBSOCKET_ENDPOINT__,
-    }
-  },
-}
+defineProps({
+  allCmd: {},
+})
+
+const store = useCommandsStore()
+
+const wsEndpoint = window.__WEBSOCKET_ENDPOINT__
+
 </script>
 
 <style scoped>
