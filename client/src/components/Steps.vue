@@ -1,12 +1,30 @@
 <template>
   <div>
-    <div v-for="cmd in allCmd" class="step step-active">
+    <div
+        v-for="cmd in allCmd"
+        class="step"
+        :class="{'step-active': cmd.isActive}"
+    >
       <div>
-        <div class="circle">{{ cmd.order + 1 }}</div>
+        <div :class="cmd.isInProgress ? 'loader':'circle'">{{ cmd.isActive ? '':cmd.order }}</div>
       </div>
       <div>
-        <div class="title">{{cmd.title}}</div>
-        <!--        <div class="caption">Optional</div>-->
+        <div class="title">
+          <button
+              v-if="cmd.showStart"
+              class="btn"
+              @click="cmd.startWS(wsEndpoint)"
+          ><span class="green">▶</span> start
+          </button>
+          <button
+              v-if="cmd.showStop"
+              class="btn"
+              @click="cmd.stopWS()"
+          >🟥 stop
+          </button>
+          {{cmd.title}}
+        </div>
+        <div class="caption">{{ cmd.text }}</div>
       </div>
     </div>
 
@@ -25,7 +43,9 @@ export default {
   computed:{
   },
   data(){
-    return{}
+    return{
+      wsEndpoint: window.__WEBSOCKET_ENDPOINT__,
+    }
   },
 }
 </script>
@@ -101,7 +121,11 @@ export default {
   font-weight: bold;
 }
 .caption {
+  margin-left: 65px;
   font-size: 0.8em;
+  /*text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;*/
 }
 
 .loader {
