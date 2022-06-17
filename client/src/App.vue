@@ -1,15 +1,15 @@
 <template>
   <div class="mainContainer">
     <terminal
-        v-for="t in logTerminals"
+        v-for="t in store.logTerminals"
         :cmd="t"
         :class="t.alias"
     ></terminal>
     <terminal
-        :cmd="counterLog"
+        :cmd="store.commonLog"
         class="general-log"
     ></terminal>
-    <steps class="steps-container" v-bind:allCmd="allCmd"></steps>
+    <steps class="steps-container"></steps>
   </div>
 </template>
 
@@ -17,8 +17,8 @@
 import Terminal from "./components/Terminal.vue";
 import Steps from "./components/Steps.vue";
 import Cmd, {Status} from "./models/cmd";
-import {computed, reactive} from 'vue'
-import {useCommandsStore } from "./stores/commands";
+import {onBeforeMount, reactive} from 'vue'
+import {useCommandsStore} from "./stores/commands";
 
 const store = useCommandsStore()
 
@@ -31,9 +31,7 @@ const counterLog = reactive(new Cmd(
     Status.INACTIVE,
     true))
 
-const allCmd = store.allCmd
-
-const logTerminals = computed(()=> allCmd.filter(cmd => cmd.ifTerminal))
+onBeforeMount(()=> { store.initialize() })
 
 </script>
 <style>
@@ -93,6 +91,9 @@ const logTerminals = computed(()=> allCmd.filter(cmd => cmd.ifTerminal))
   color: black;
   cursor: pointer;
   width: 60px;
+  transition: 0.3s;
 }
-
+.btn:hover {
+  box-shadow: 0 2px 4px 0 rgba(0,0,0,0.2);
+}
 </style>

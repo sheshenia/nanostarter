@@ -13,7 +13,7 @@
           <button
               v-if="cmd.showStart"
               class="btn"
-              @click="cmd.startWS(wsEndpoint)"
+              @click="startClick(cmd)"
           ><span class="green">▶</span> start
           </button>
           <button
@@ -35,13 +35,31 @@
 <script setup>
 import {useCommandsStore } from "../stores/commands";
 
-defineProps({
-  allCmd: {},
-})
-
 const store = useCommandsStore()
 
 const wsEndpoint = window.__WEBSOCKET_ENDPOINT__
+const apiEndpoint = window.__API_ENDPOINT__
+
+async function startClick(cmd) {
+  switch (cmd.alias) {
+    case "get_scep_cert":
+      console.log("current:", cmd.text)
+      if (!store.notifications["ngrok_scep"]){
+        console.log("no ngrok_scep binding URL, start ngrok at first")
+        return
+      }
+      cmd.text = cmd.text.replace(/https\S+\.io/i, store.notifications["ngrok_scep"])
+      console.log("updated:", cmd.text)
+      store.execCommonLogCmd(cmd)
+      break
+    case 'push_cert':
+      store.execCommonLogCmd(cmd)
+      break
+    default:
+      cmd.startWS(wsEndpoint)
+  }
+
+}
 
 </script>
 

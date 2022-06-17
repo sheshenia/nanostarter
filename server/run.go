@@ -3,8 +3,10 @@ package server
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
+	"os/exec"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -31,6 +33,34 @@ func Run(ctx context.Context) error {
 		log.Println(cmnd)
 		mux.Handle(cmnd.pattern(), cmnd)
 	}
+	mux.HandleFunc("/command", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		if r.Method == "OPTIONS" {
+			return
+		}
+
+		cmdText := r.FormValue("cmd")
+		if cmdText == "" {
+			http.Error(w, "no command to exec", http.StatusBadRequest)
+			return
+		}
+		log.Println("try to parse, cmdText:", cmdText)
+		cmd := NewCommandFromString(cmdText)
+
+		var (
+			out []byte
+			err error
+		)
+		out, err = exec.Command("bash", "-c", cmd.String()).Output()
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to execute command: %s", cmd), http.StatusInternalServerError)
+			return
+		}
+		fmt.Println("command result:", string(out))
+		w.Write(out)
+		/*cmd.ServeHTTP(w, r)*/
+	})
 
 	server := &http.Server{
 		Addr:    *addr,

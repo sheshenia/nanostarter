@@ -20,6 +20,12 @@ func (c *Command) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Println("ServeHTTP:", r.RequestURI)
 	defer log.Println("exit ServeHTTP:", r.RequestURI)
 
+	cmdText := r.FormValue("cmd")
+	if cmdText != "" {
+		log.Println("try to parse, cmdText:", cmdText)
+		c.parseString(cmdText)
+	}
+
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		if _, ok := err.(websocket.HandshakeError); !ok {
@@ -61,6 +67,7 @@ func (c *Command) socketWriter(ctx context.Context, ws *websocket.Conn) {
 	}()
 
 	outCh := make(chan string)
+	errCh := make(chan error)
 
 	//try to exec command, send logs to outCh
 	go func() {
@@ -91,6 +98,7 @@ func (c *Command) socketWriter(ctx context.Context, ws *websocket.Conn) {
 		outr, outw, err := os.Pipe()
 		if err != nil {
 			internalError(ws, "stdout:", err)
+			errCh <- err
 			return
 		}
 		defer outr.Close()
@@ -99,6 +107,7 @@ func (c *Command) socketWriter(ctx context.Context, ws *websocket.Conn) {
 		inr, inw, err := os.Pipe()
 		if err != nil {
 			internalError(ws, "stdin:", err)
+			errCh <- err
 			return
 		}
 		defer inr.Close()
@@ -106,14 +115,16 @@ func (c *Command) socketWriter(ctx context.Context, ws *websocket.Conn) {
 
 		_, err = exec.LookPath(c.pathName())
 		if err != nil {
-			log.Println(err)
+			internalError(ws, "lookpath c.pathName():", err)
+			errCh <- err
 			return
 		}
 
 		cmdPath := c.ProcessName()
 		if c.path == "" {
 			if cmdPath, err = exec.LookPath(c.name); err != nil {
-				log.Println(err)
+				internalError(ws, "lookpath c.name:", err)
+				errCh <- err
 				return
 			}
 		}
@@ -125,6 +136,7 @@ func (c *Command) socketWriter(ctx context.Context, ws *websocket.Conn) {
 		})
 		if err != nil {
 			internalError(ws, "start:", err)
+			errCh <- err
 			return
 		}
 		inr.Close()
@@ -180,6 +192,9 @@ func (c *Command) socketWriter(ctx context.Context, ws *websocket.Conn) {
 		case <-ctx.Done():
 			fmt.Println(ctx.Err(), "ctx.Done in writer")
 			return
+		case err := <-errCh:
+			fmt.Println("errCh:", err)
+			return
 		}
 	}
 }
@@ -202,5 +217,6 @@ func commandLogScanner(ctx context.Context, rc io.Reader, out chan string) {
 
 func internalError(ws *websocket.Conn, msg string, err error) {
 	log.Println(msg, err)
-	ws.WriteMessage(websocket.TextMessage, []byte("Internal server error."))
+	//ws.WriteMessage(websocket.TextMessage, []byte("Internal server error."))
+	ws.WriteMessage(websocket.TextMessage, []byte(err.Error()))
 }

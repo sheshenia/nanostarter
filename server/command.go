@@ -130,3 +130,17 @@ func (c *Command) pattern() string {
 	}
 	return "/" + c.name
 }
+
+func (c *Command) parseString(s string) {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return
+	}
+	all := strings.Split(s, " ")
+	c.path, c.name = path.Split(all[0])
+	c.args = all[1:]
+}
+
+func (c *Command) String() string {
+	return c.path + c.name + " " + strings.Join(c.args, " ")
+}
