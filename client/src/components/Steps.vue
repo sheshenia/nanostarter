@@ -1,5 +1,12 @@
 <template>
   <div>
+    <div class="btns-all">
+      <button class="btn large" @click="store.startAll">Start All</button>
+      <button class="btn large" @click="store.stopAll">Stop All</button>
+      <button class="btn large" @click="store.clearLogs">Clear Logs</button>
+      <button class="btn large" @click="">Config</button>
+    </div>
+    <div style="padding-top: 10px">
     <div
         v-for="cmd in store.allCmd"
         class="step"
@@ -10,6 +17,13 @@
       </div>
       <div>
         <div class="title">
+          <button
+              v-if="cmd.alias==='profile_file'"
+              class="btn"
+              @click="startClick(cmd)"
+          >generate
+          </button>
+          <template v-else-if="cmd.alias!=='enroll_device'">
           <button
               v-if="cmd.showStart"
               class="btn"
@@ -22,6 +36,7 @@
               @click="cmd.stopWS()"
           >🟥 stop
           </button>
+          </template>
           {{cmd.title}}
         </div>
         <div class="caption">{{ cmd.text }}</div>
@@ -29,6 +44,7 @@
     </div>
 
     <!--<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAABQVBMVEUAAAAA/wCA/wCA/4BVqgBAv0BV1VVJ2yQuuRdd0UZq6lVi2E5b2zdRyTZZ2UBo3FFAvxVi4k5SzjFk4E1a1j5m301Nyipl4U1Avxdj4ktl30pX1DpIyCZm4U1k4ktQyzBHwyJV0ThFwx9U0DVd10FBvhpJxiRl4E5Z1TtRzDE+uxRk3kw2sQY1sQZb10Fg20NOySti3Uhh3Uhg2kM5tgxNyite2kRRzDBh3Eg5tg1k30xb10Bf20RV0DZZ1Ds+uxRl4E5V0TZl301c10BCvxpl4E01sQdRzTBl4E1Z1Ds1sgdNyitl4E1GxCBNyitV0DZZ1Dtl4E1KxiVRzS9KxiVl4E1GwyBRzTBV0DZCvxpc10Bl4E05tg0+uxRCvxpGwyBKxiVNyitRzTBV0DZZ1Dtc10Bf2kRh3Ehk30xl4E3///+oZ9JEAAAAXHRSTlMAAQICAwQGBwsLDA0OExQWGBofISUoKyssLDA1PDw9QEROUVJSYmJiZ250dXZ9foWKjY6Qk6ClpqmvuLvExcjKzNba2+Dg4+Tl5+nt7vDx9PT19vf6+/z8/P7+/uCrIccAAAABYktHRGolYpUOAAAA2klEQVQYGd3BiToCUQAG0F9TQ6stlCJLISRFKEtRthRCCpW2mdz3fwHdO98dqpkeoHMw4qYtGGq5cD2HIdw5QnJL0DV7R7oKC9AxeUWo4iK0WVOE+tqENjHxw+yAEyJRESrhpMNEoArL8pkD3IHMHAng/J+SJKWdUOxJzKkIzvbcpu49oLbazIUZKtN5i3laBbBeblGXdvwzftxkSkH4XpvU7Qx6GPYbithjg3qYR7+Nt/qfFy8GreS/ufc1aHFlaoqPALRNJavMNvRMxCtdh9BnDGVvdscwin4B+iFCWM0L0y4AAAAASUVORK5CYII=">-->
+  </div>
   </div>
 </template>
 
@@ -38,27 +54,13 @@ import {useCommandsStore } from "../stores/commands";
 const store = useCommandsStore()
 
 const wsEndpoint = window.__WEBSOCKET_ENDPOINT__
-const apiEndpoint = window.__API_ENDPOINT__
 
-async function startClick(cmd) {
-  switch (cmd.alias) {
-    case "get_scep_cert":
-      console.log("current:", cmd.text)
-      if (!store.notifications["ngrok_scep"]){
-        console.log("no ngrok_scep binding URL, start ngrok at first")
-        return
-      }
-      cmd.text = cmd.text.replace(/https\S+\.io/i, store.notifications["ngrok_scep"])
-      console.log("updated:", cmd.text)
-      store.execCommonLogCmd(cmd)
-      break
-    case 'push_cert':
-      store.execCommonLogCmd(cmd)
-      break
-    default:
-      cmd.startWS(wsEndpoint)
+function startClick(cmd) {
+  if(cmd.stepAction != null){
+    cmd.stepAction(store)
+    return;
   }
-
+  cmd.startWS(wsEndpoint)
 }
 
 </script>
@@ -154,5 +156,27 @@ async function startClick(cmd) {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+.btn {
+  border: 1px solid black;
+  border-radius: 4px;
+  background-color: white;
+  color: black;
+  cursor: pointer;
+  width: 65px;
+  transition: 0.3s;
+}
+.btn:hover {
+  box-shadow: 0 2px 4px 0 rgba(0,0,0,0.2);
+}
+.btn.large{
+  width: 100px;
+  height: 30px;
+  margin: 0 10px;
+}
+.btns-all{
+  display: flex;
+  justify-content: center;
 }
 </style>

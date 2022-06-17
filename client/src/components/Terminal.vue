@@ -4,20 +4,22 @@
       <div>{{ cmd.title }}</div>
       <div>{{ notification }}</div>
       <div class="btns">
-        <button
-            v-if="cmd.showStart"
-            class="terminal-btn"
-            @click="cmd.startWS(wsEndpoint)"
-            :title="`Start ${cmd.alias}`"
-        ><span class="green">▶</span> start
-        </button>
-        <button
-            v-if="cmd.showStop"
-            class="terminal-btn"
-            @click="cmd.stopWS()"
-            :title="`Stop ${cmd.alias}`"
-        >🟥 stop
-        </button>
+        <template v-if="!hideStartStop">
+          <button
+              v-if="cmd.showStart"
+              class="terminal-btn"
+              @click="cmd.startWS(wsEndpoint)"
+              :title="`Start ${cmd.alias}`"
+          ><span class="green">▶</span> start
+          </button>
+          <button
+              v-if="cmd.showStop"
+              class="terminal-btn"
+              @click="cmd.stopWS()"
+              :title="`Stop ${cmd.alias}`"
+          >🟥 stop
+          </button>
+        </template>
         <button class="terminal-btn" @click="clearLog" title="Clear Log screen">🗑</button>
 <!--        <button class="btn" @click="scrollToBottom">scroll</button>-->
       </div>
@@ -36,6 +38,10 @@ import {mapStores} from "pinia/dist/pinia";
 export default {
   props: {
     cmd: Cmd,
+    hideStartStop: {
+      type: Boolean,
+      default: false,
+    }
   },
   data(){
     return{
@@ -58,6 +64,7 @@ export default {
     addWatchersToNgrok(){
       // watcher for detection ngrok URL address
       this.$watch('logLen', ()=>{
+        if(this.cmd.log.length === 0){ return }
         const ngUrl = /https\S+\.io/i.exec(this.cmd.log[this.cmd.log.length-1])
         if (ngUrl != null){
           console.log("Founded ngrok URL:", ngUrl[0])
@@ -65,14 +72,32 @@ export default {
           this.commandsStore.notifications[this.cmd.alias] = ngUrl[0]
         }
       })
-
+      this.addStatusWatcher()
+    },
+    addWatchersToNanomdm(){
+      // watcher for detection device id topic=com.apple.mgmt.External.e3b8ceac-1f18-2c8e-8a63-dd17d99435d9
+      // e3b8ceac-1f18-2c8e-8a63-dd17d99435d9
+      this.$watch('logLen', ()=>{
+        if(this.cmd.log.length === 0){ return }
+        const deviceIdReg = /topic=com.apple[\w\.]+\.([a-z0-9-]+)/i;
+        const lastLog = this.cmd.log[this.cmd.log.length-1]
+        const match = lastLog.match(deviceIdReg)
+        if (match != null){
+          console.log("Founded nano device ID:", match[1])
+          this.commandsStore.pushToCommonLog(`Got ${this.cmd.alias} device ID: ${match[1]}`)
+          this.commandsStore.notifications[this.cmd.alias] = match[1]
+        }
+      })
+      this.addStatusWatcher()
+    },
+    addStatusWatcher(){
       //on change status, clean up ngrok url, and need to stop all other dependent step processes
       this.$watch('cmd.status', ()=>{
         if (!this.cmd.isActive){
           this.commandsStore.notifications[this.cmd.alias] = ""
         }
       })
-    }
+    },
   },
   computed: {
     // creating computed value for watching changes, and scroll down
@@ -85,7 +110,7 @@ export default {
   watch: {
     // watching the length of the log, if changed - scroll down
     // nextTick because if not watcher fires earlier than vue creates dom element
-    logLen(val){
+    logLen(){
       this.$nextTick(() => {
         this.scrollToBottom()
       });
@@ -104,18 +129,8 @@ export default {
         this.addWatchersToNgrok()
         break
       case 'nanomdm':
-        // watcher for detection device id topic=com.apple.mgmt.External.e3b8ceac-1f18-2c8e-8a63-dd17d99435d9
-        // e3b8ceac-1f18-2c8e-8a63-dd17d99435d9
-        this.$watch('logLen', ()=>{
-          const deviceIdReg = /topic=com.apple[\w\.]+\.([a-z0-9-]+)/i
-          const lastLog = this.cmd.log[this.cmd.log.length-1]
-          const match = lastLog.match(deviceIdReg)
-          if (match != null){
-            console.log("Founded nano device ID:", match[1])
-            this.commandsStore.pushToCommonLog(`Got ${this.cmd.alias} device ID: ${match[1]}`)
-            this.commandsStore.notifications[this.cmd.alias] = match[1]
-          }
-        })
+        console.log("add watcher to", this.cmd.alias)
+        this.addWatchersToNanomdm()
         break
     }
 

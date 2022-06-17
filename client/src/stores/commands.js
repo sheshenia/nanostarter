@@ -15,7 +15,8 @@ export const useCommandsStore = defineStore('commands', {
         allCmd: [],
         notifications: {
             //'ngrok_scep': "some url"
-        }
+        },
+
     }),
     getters: {
         logTerminals: (state) => state.allCmd.filter(cmd => cmd.ifTerminal),
@@ -35,6 +36,7 @@ export const useCommandsStore = defineStore('commands', {
                     cmd.log,
                     cmd.status,
                     cmd.ifTerminal,
+                    cmd.stepAction,
                     cmd.conn
                 ))
             }
@@ -54,7 +56,34 @@ export const useCommandsStore = defineStore('commands', {
         },
         pushToCommonLog(msg){
             this.commonLog.log.push(msg)
-        }
+        },
+        async startAll(){
+            console.log("startAll click")
+            for(const cmd of this.allCmd){
+                if(cmd.isActive){ continue }
+                if(cmd.stepAction != null){
+                    cmd.stepAction(this)
+                }else{
+                    cmd.startWS(window.__WEBSOCKET_ENDPOINT__)
+                }
+                await delay(1500);
+            }
+        },
+        stopAll(){
+            console.log("stopAll click")
+            for(let i = this.allCmd.length -1;i>=0;i--){
+                this.allCmd[i].stopWS()
+            }
+        },
+        clearLogs(){
+            for(const cmd of this.allCmd){
+                cmd.clearLog()
+            }
+            this.commonLog.clearLog()
+        },
     }
 })
 
+function delay(time) {
+    return new Promise(resolve => setTimeout(resolve, time));
+}

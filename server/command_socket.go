@@ -155,7 +155,6 @@ func (c *Command) socketWriter(ctx context.Context, ws *websocket.Conn) {
 		select {
 		case <-ctx.Done():
 		case <-time.After(time.Second):
-			// A bigger bonk on the head.
 			if err := proc.Signal(os.Kill); err != nil {
 				log.Println("term:", err)
 			}
@@ -170,7 +169,7 @@ func (c *Command) socketWriter(ctx context.Context, ws *websocket.Conn) {
 	// periodically ping websocket connection
 	for {
 		select {
-		case line := <-outCh /*tf.Lines*/ :
+		case line := <-outCh:
 			p, err := json.Marshal(line)
 			if err != nil {
 				log.Println(err)
@@ -207,10 +206,6 @@ func commandLogScanner(ctx context.Context, rc io.Reader, out chan string) {
 			log.Println("exit commandLogScanner", ctx.Err())
 			return
 		case out <- scanner.Text():
-
-			/*default:
-			fmt.Println(scanner.Text())
-			out <- scanner.Text()*/
 		}
 	}
 }

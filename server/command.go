@@ -105,17 +105,15 @@ func (c *Command) WithArgs(args ...string) *Command {
 
 func (c *Command) pathName() string {
 	return c.path + c.name
-	/*if c.path == "" {
-		return c.name
-	}
-	return "./" + c.name*/
 }
+
 func (c *Command) ProcessName() string {
 	if c.path == "" {
 		return c.name
 	}
 	return "./" + c.name
 }
+
 func (c *Command) ProcessDir() string {
 	if c.path == "" || c.path == "./" {
 		return ""

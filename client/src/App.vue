@@ -7,6 +7,7 @@
     ></terminal>
     <terminal
         :cmd="store.commonLog"
+        show-start-stop="false"
         class="general-log"
     ></terminal>
     <steps class="steps-container"></steps>
@@ -16,20 +17,10 @@
 <script setup>
 import Terminal from "./components/Terminal.vue";
 import Steps from "./components/Steps.vue";
-import Cmd, {Status} from "./models/cmd";
-import {onBeforeMount, reactive} from 'vue'
+import {onBeforeMount} from 'vue'
 import {useCommandsStore} from "./stores/commands";
 
 const store = useCommandsStore()
-
-const counterLog = reactive(new Cmd(
-    0,
-    'Counter',
-    'counter',
-    './counter',
-    [],
-    Status.INACTIVE,
-    true))
 
 onBeforeMount(()=> { store.initialize() })
 
@@ -53,7 +44,7 @@ onBeforeMount(()=> { store.initialize() })
     'nano st'
     'nano st'
     'ngr2 st';
-  gap: 10px;
+  gap: 12px;
   /*width: 98vw;*/
   height: 96vh;
 }
@@ -75,6 +66,12 @@ onBeforeMount(()=> { store.initialize() })
 .steps-container {
   grid-area: st;
   height: available;
+  border-radius: 5px;
+  box-shadow: 0 3px 6px 0 rgba(0,0,0,0.4);
+  padding: 10px;
+}
+.steps-container:hover {
+  box-shadow: 0 6px 12px 0 rgba(0,0,0,0.4);
 }
 .green {
   color: green;
@@ -84,16 +81,4 @@ onBeforeMount(()=> { store.initialize() })
   justify-content: space-evenly;
 }
 
-.btn {
-  border: 1px solid black;
-  border-radius: 4px;
-  background-color: white;
-  color: black;
-  cursor: pointer;
-  width: 60px;
-  transition: 0.3s;
-}
-.btn:hover {
-  box-shadow: 0 2px 4px 0 rgba(0,0,0,0.2);
-}
 </style>

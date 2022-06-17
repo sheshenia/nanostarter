@@ -1,5 +1,5 @@
 export default class Cmd {
-    constructor(order, title, alias, text, log, status=Status.INACTIVE, ifTerminal = false, conn = null) {
+    constructor(order, title, alias, text, log, status=Status.INACTIVE, ifTerminal = false, stepAction=null, conn = null) {
         this.order = order
         this.title = title
         this.alias = alias
@@ -7,13 +7,14 @@ export default class Cmd {
         this.log = log
         this.status = status===false ? Status.INACTIVE : status
         this.ifTerminal = ifTerminal
+        this.stepAction = stepAction //function
         this.conn = conn
     }
 
-    get showStart() { return this.status == Status.INACTIVE || this.status == Status.ERROR }
-    get showStop() { return this.status == Status.ACTIVE }
-    get isActive() { return this.status == Status.ACTIVE }
-    get isInProgress() { return this.status == Status.IN_PROGRESS }
+    get showStart() { return this.status === Status.INACTIVE || this.status === Status.ERROR }
+    get showStop() { return this.status === Status.ACTIVE }
+    get isActive() { return this.status === Status.ACTIVE }
+    get isInProgress() { return this.status === Status.IN_PROGRESS }
 
     activate() { this.status = Status.ACTIVE }
     deactivate() { this.status = Status.INACTIVE }
@@ -41,7 +42,7 @@ export default class Cmd {
             return
         }
         // if nothing to send yet closing the connection
-        if (this.conn.bufferedAmount==0){
+        if (this.conn.bufferedAmount===0){
             this.conn.close()
             return
         }
