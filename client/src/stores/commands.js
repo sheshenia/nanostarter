@@ -16,6 +16,7 @@ export const useCommandsStore = defineStore('commands', {
         notifications: {
             //'ngrok_scep': "some url"
         },
+        saveLogsToLocalstorage: false,
 
     }),
     getters: {
@@ -23,21 +24,71 @@ export const useCommandsStore = defineStore('commands', {
     },
     actions: {
         initialize() {
+            const sltl = localStorage.getItem("saveLogsToLocalstorage")
+            if(sltl !== null && sltl==="true"){
+                this.saveLogsToLocalstorage = true
+                // TODO add improvised watcher to save logs
+
+            }
+
+            if(this.saveLogsToLocalstorage){
+                const commonLogsStr = localStorage.getItem("commonLog")
+                if (commonLogsStr !== null){
+                    const cl = JSON.parse(commonLogsStr)
+                    if(Array.isArray(cl)){
+                        this.commonLog.log = cl
+                    }
+                }
+            }
+
+            //TODO try to load configs from localstorage
+            let allCmdArrayObj =  allCmdDefault
+
+            // try to get all commands from localstorage and deep clone to store allCmd
+            // if smth. wrong populate allCmd with default commands
+            try {
+                const allCmdString = localStorage.getItem("allCmd")
+                if(allCmdString !== null){
+                    allCmdArrayObj = JSON.parse(allCmdString)
+                }
+                this.allCmdDeepClone(allCmdArrayObj)
+            }catch (e) {
+                console.log(e)
+                this.allCmdDeepClone(allCmdDefault)
+            }
+        },
+        saveToLocalStorage(){
+            localStorage.setItem("saveLogsToLocalstorage", this.saveLogsToLocalstorage || "")
+
+            //only save title, text and logs (if saveLogsToLocalstorage)
+            const localAllCmd = []
+            for(let i=0;i<this.allCmd.length;i++) {
+                localAllCmd.push({
+                    "title": this.allCmd[i].title,
+                    "text": this.allCmd[i].text,
+                    "log": this.saveLogsToLocalstorage ? this.allCmd[i].log : []
+                })
+            }
+            localStorage.setItem("allCmd", JSON.stringify(localAllCmd))
+            localStorage.setItem("commonLog", JSON.stringify(this.saveLogsToLocalstorage ? this.commonLog.log : []))
+        },
+        // allCmdDeepClone deep clone with class assign
+        allCmdDeepClone(allCmdArrayObj){
+            this.allCmd = []
             // need deep cloning with class
             // JSON.parse(JSON.stringify(allCmdDefault)); doesn't work we are loosing class Cmd main functionality
             //this.allCmd = JSON.parse(JSON.stringify(allCmdDefault));
-            this.allCmd = []
-            for(const cmd of allCmdDefault) {
+            for(let i=0;i<allCmdArrayObj.length;i++) {
                 this.allCmd.push(new Cmd(
-                    cmd.order,
-                    cmd.title,
-                    cmd.alias,
-                    cmd.text,
-                    cmd.log,
-                    cmd.status,
-                    cmd.ifTerminal,
-                    cmd.stepAction,
-                    cmd.conn
+                    allCmdDefault[i].order,
+                    allCmdArrayObj[i].title,
+                    allCmdDefault[i].alias,
+                    allCmdArrayObj[i].text,
+                    allCmdArrayObj[i].log,
+                    allCmdDefault[i].status,
+                    allCmdDefault[i].ifTerminal,
+                    allCmdDefault[i].stepAction, //function
+                    null
                 ))
             }
         },
@@ -74,6 +125,7 @@ export const useCommandsStore = defineStore('commands', {
             for(let i = this.allCmd.length -1;i>=0;i--){
                 this.allCmd[i].stopWS()
             }
+            this.notifications = {}
         },
         clearLogs(){
             for(const cmd of this.allCmd){

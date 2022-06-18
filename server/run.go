@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"flag"
-	"fmt"
 	"log"
 	"net/http"
 	"os/exec"
@@ -48,18 +47,14 @@ func Run(ctx context.Context) error {
 		log.Println("try to parse, cmdText:", cmdText)
 		cmd := NewCommandFromString(cmdText)
 
-		var (
-			out []byte
-			err error
-		)
-		out, err = exec.Command("bash", "-c", cmd.String()).Output()
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Failed to execute command: %s", cmd), http.StatusInternalServerError)
+		c := exec.CommandContext(r.Context(), "bash", "-c", cmd.String())
+		c.Stdout = w
+		c.Stderr = w
+		if err := c.Run(); err != nil {
+			log.Println(err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		fmt.Println("command result:", string(out))
-		w.Write(out)
-		/*cmd.ServeHTTP(w, r)*/
 	})
 
 	server := &http.Server{

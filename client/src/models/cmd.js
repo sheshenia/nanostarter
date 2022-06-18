@@ -53,11 +53,15 @@ export default class Cmd {
     startCmd(apiEndpoint){
         this.inProgress()
         return fetch(apiEndpoint + 'command?cmd=' + encodeURIComponent(this.text))
-            .then(resp => {
+            .then(resp =>{
                 if (!resp.ok) {
                     throw new Error('Network response was not ok.');
                 }
-                this.log.push(resp.data || `Ok!`)
+                return resp.text()
+            })
+            .then(data => {
+                this.log.push(data || `Ok!`)
+                console.log("response: ", data)
                 this.activate()
             })
             .catch(e=>{

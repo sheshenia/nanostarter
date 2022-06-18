@@ -80,5 +80,24 @@ onBeforeMount(()=> { store.initialize() })
   display: flex;
   justify-content: space-evenly;
 }
-
+.btn {
+  border: 1px solid black;
+  border-radius: 4px;
+  background-color: white;
+  color: black;
+  cursor: pointer;
+  width: 65px;
+  transition: 0.3s;
+}
+.btn:hover {
+  box-shadow: 0 2px 4px 0 rgba(0,0,0,0.2);
+}
+.btn.large{
+  width: 100px;
+  height: 30px;
+  margin: 0 10px;
+}
+.btn.large.icon{
+  width: initial;
+}
 </style>

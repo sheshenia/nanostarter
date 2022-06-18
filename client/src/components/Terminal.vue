@@ -20,7 +20,7 @@
           >🟥 stop
           </button>
         </template>
-        <button class="terminal-btn" @click="clearLog" title="Clear Log screen">🗑</button>
+        <button class="terminal-btn" @click="cmd.clearLog" title="Clear Log screen">🗑</button>
 <!--        <button class="btn" @click="scrollToBottom">scroll</button>-->
       </div>
     </div>
@@ -49,6 +49,14 @@ export default {
       elToScroll: null,
     }
   },
+  computed: {
+    // creating computed value for watching changes, and scroll down
+    logLen(){ return this.cmd.log.length},
+
+    // pinia uses store's: id + Store
+    ...mapStores(useCommandsStore),
+    notification() { return this.commandsStore.notifications[this.cmd.alias]}
+  },
   methods: {
     // scrollToBottom scrolls to the bottom of div element with logs
     scrollToBottom(){
@@ -56,10 +64,6 @@ export default {
       if (this.elToScroll != null){
         this.elToScroll.scroll({ top: this.elToScroll.scrollHeight, behavior: "smooth" });
       }
-    },
-    clearLog() {
-      console.log("clearLog click")
-      this.cmd.clearLog()
     },
     addWatchersToNgrok(){
       // watcher for detection ngrok URL address
@@ -98,14 +102,6 @@ export default {
         }
       })
     },
-  },
-  computed: {
-    // creating computed value for watching changes, and scroll down
-    logLen(){ return this.cmd.log.length},
-
-    // pinia uses store's: id + Store
-    ...mapStores(useCommandsStore),
-    notification() { return this.commandsStore.notifications[this.cmd.alias]}
   },
   watch: {
     // watching the length of the log, if changed - scroll down
