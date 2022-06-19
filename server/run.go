@@ -2,10 +2,14 @@ package server
 
 import (
 	"context"
+	"embed"
 	"flag"
+	"fmt"
+	"io/fs"
 	"log"
 	"net/http"
 	"os/exec"
+	"regexp"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -22,16 +26,50 @@ var (
 	}
 )
 
+//go:embed client/assets
+var assets embed.FS
+
+//go:embed client/index.html
+var mainPage []byte
+
 func Run(ctx context.Context) error {
 	flag.Parse()
 
+	//output address in blue color
+	colored := fmt.Sprintf("\x1b[%dm%s%s\x1b[0m", 34, "http://localhost", *addr)
+	log.Println("Serving Nanostarter:", colored)
+	/*if _, err := exec.Command("bash", "-c", `sed -i -e 's/__PORT__\s\?=\s\?":[0-9]\{4\}"/__PORT__ = "`+*addr+`"/' ./client/dist/index.html`).Output(); err != nil {
+		log.Println(err)
+	}*/
+
+	// replacing default port in index.html to *addr
+	templatePort := regexp.MustCompile(`(?i)window\.__PORT__\s?=\s?(?:"|'):\d{4,}(?:"|')`)
+	mainPage = templatePort.ReplaceAll(mainPage, []byte(fmt.Sprintf(`window.__PORT__ = "%s"`, *addr)))
+
 	mux := http.NewServeMux()
-	mux.Handle("/", http.FileServer(http.Dir("./client_")))
+
+	//serving main page
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if _, err := w.Write(mainPage); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	})
+
+	contentStatic, err := fs.Sub(assets, "client")
+	if err != nil {
+		log.Println(err)
+	}
+	//serving assets: *.js, *.css and other
+	mux.Handle("/assets/", http.FileServer(http.FS(contentStatic))) //http.FileServer(http.Dir("./client/dist")))
+
 	//each command has its own websocket handler
 	for _, cmnd := range logCommands {
-		log.Println(cmnd)
+		log.Printf("websocket  endpoint: /%s\n", cmnd.alias)
 		mux.Handle(cmnd.pattern(), cmnd)
 	}
+
+	//serving common Log simple commands terminal
+	log.Println("http  endpoint     : /command")
 	mux.HandleFunc("/command", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
@@ -65,7 +103,7 @@ func Run(ctx context.Context) error {
 	//graceful shutdown, when signal from context
 	go func() {
 		<-ctx.Done()
-		log.Println("Shutdown websocket server!")
+		log.Println("Shutdown Nanostarter!")
 		if err := server.Shutdown(ctx); err != nil {
 			return
 		}

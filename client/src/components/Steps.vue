@@ -1,7 +1,7 @@
 <template>
   <Transition name="fade">
     <configs v-if="state.showConfigs" @hide="state.showConfigs=false"></configs>
-  <div v-else>
+  <div v-else class="container">
     <div class="btns-all">
       <div>
         <button class="btn large" @click="store.startAll">Start All</button>
@@ -12,7 +12,7 @@
         <button class="btn large icon" @click="state.showConfigs=true" title="Config commands"><span style="font-size: large">⚙</span></button>
       </div>
     </div>
-    <div style="padding-top: 15px">
+    <div style="padding-top: 15px;height: 100%;overflow-x: auto">
     <div
         v-for="cmd in store.allCmd"
         class="step"
@@ -44,6 +44,10 @@
           </button>
           </template>
           {{cmd.title}}
+          <strong style="color: black" v-if="cmd.alias==='enroll_device'&&store.enrollmentIDs.size>0">
+            : {{ Array.from(store.enrollmentIDs).join(", ")}}
+          </strong>
+
         </div>
         <div class="caption">{{ cmd.text }}</div>
       </div>
@@ -77,6 +81,12 @@ function startClick(cmd) {
 </script>
 
 <style scoped>
+.container{
+  display: flex;
+  flex-direction: column;
+}
+
+
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.5s ease;

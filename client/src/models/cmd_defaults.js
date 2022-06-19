@@ -43,7 +43,7 @@ export const allCmdDefault = [
         4,
         'Nanomdm',
         'nanomdm',
-        './nanomdm/nanomdm-linux-amd64 -ca ca.pem -api nanomdm -debug',
+        './nanomdm/nanomdm-linux-amd64 -ca ./ca.pem -api nanomdm -debug',
         [],
         Status.INACTIVE,
         true),

@@ -83,14 +83,24 @@ export default {
       // e3b8ceac-1f18-2c8e-8a63-dd17d99435d9
       this.$watch('logLen', ()=>{
         if(this.cmd.log.length === 0){ return }
-        const deviceIdReg = /topic=com.apple[\w\.]+\.([a-z0-9-]+)/i;
+        const topicIdReg = /topic=com.apple[\w\.]+\.([a-z0-9-]+)/i;
         const lastLog = this.cmd.log[this.cmd.log.length-1]
-        const match = lastLog.match(deviceIdReg)
+        const match = lastLog.match(topicIdReg)
         if (match != null){
           console.log("Founded nano device ID:", match[1])
-          this.commandsStore.pushToCommonLog(`Got ${this.cmd.alias} device ID: ${match[1]}`)
+          this.commandsStore.pushToCommonLog(`Got ${this.cmd.alias} Topic ID: ${match[1]}`)
           this.commandsStore.notifications[this.cmd.alias] = match[1]
         }
+
+        if (lastLog.includes("msg=TokenUpdate")){
+          const enrollmentIdReg = / id=([a-z0-9-]+)/i;
+          const matchEnrId = lastLog.match(enrollmentIdReg)
+          if (matchEnrId != null){
+            this.commandsStore.enrollmentIDs.add(matchEnrId[1])
+            this.commandsStore.activateEnrollDeviceStep()
+          }
+        }
+
       })
       this.addStatusWatcher()
     },

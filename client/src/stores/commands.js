@@ -16,6 +16,7 @@ export const useCommandsStore = defineStore('commands', {
         notifications: {
             //'ngrok_scep': "some url"
         },
+        enrollmentIDs: new Set(),
         saveLogsToLocalstorage: false,
 
     }),
@@ -126,6 +127,7 @@ export const useCommandsStore = defineStore('commands', {
                 this.allCmd[i].stopWS()
             }
             this.notifications = {}
+            this.enrollmentIDs.clear()
         },
         clearLogs(){
             for(const cmd of this.allCmd){
@@ -133,6 +135,9 @@ export const useCommandsStore = defineStore('commands', {
             }
             this.commonLog.clearLog()
         },
+        activateEnrollDeviceStep(){
+            this.allCmd.find(cmd=>cmd.alias==="enroll_device").activate()
+        }
     }
 })
 

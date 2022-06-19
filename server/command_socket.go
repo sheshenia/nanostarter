@@ -17,8 +17,8 @@ import (
 )
 
 func (c *Command) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	log.Println("ServeHTTP:", r.RequestURI)
-	defer log.Println("exit ServeHTTP:", r.RequestURI)
+	log.Println("serve websocket:", r.RequestURI)
+	defer log.Println("exit serve websocket:", r.RequestURI)
 
 	cmdText := r.FormValue("cmd")
 	if cmdText != "" {
@@ -41,9 +41,15 @@ func (c *Command) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (c *Command) socketReader(ws *websocket.Conn) {
 	defer fmt.Println("exit reader")
-	defer ws.Close()
+	defer func() {
+		if err := ws.Close(); err != nil {
+			log.Println(err)
+		}
+	}()
 	ws.SetReadLimit(512)
-	ws.SetReadDeadline(time.Now().Add(pongWait))
+	if err := ws.SetReadDeadline(time.Now().Add(pongWait)); err != nil {
+		log.Println(err)
+	}
 	ws.SetPongHandler(func(string) error { ws.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 	for {
 		_, p, err := ws.ReadMessage()
@@ -62,7 +68,9 @@ func (c *Command) socketWriter(ctx context.Context, ws *websocket.Conn) {
 	pingTicker := time.NewTicker(pingPeriod)
 	defer func() {
 		pingTicker.Stop()
-		ws.Close()
+		if err := ws.Close(); err != nil {
+			log.Println(err)
+		}
 		fmt.Println("exit from socketWriter")
 	}()
 
@@ -97,7 +105,7 @@ func (c *Command) socketWriter(ctx context.Context, ws *websocket.Conn) {
 		// more low-level and complicated solution that works with all commands we need
 		outr, outw, err := os.Pipe()
 		if err != nil {
-			internalError(ws, "stdout:", err)
+			someError(ws, "stdout:", err)
 			errCh <- err
 			return
 		}
@@ -106,7 +114,7 @@ func (c *Command) socketWriter(ctx context.Context, ws *websocket.Conn) {
 
 		inr, inw, err := os.Pipe()
 		if err != nil {
-			internalError(ws, "stdin:", err)
+			someError(ws, "stdin:", err)
 			errCh <- err
 			return
 		}
@@ -115,7 +123,7 @@ func (c *Command) socketWriter(ctx context.Context, ws *websocket.Conn) {
 
 		_, err = exec.LookPath(c.pathName())
 		if err != nil {
-			internalError(ws, "lookpath c.pathName():", err)
+			someError(ws, "lookpath c.pathName():", err)
 			errCh <- err
 			return
 		}
@@ -123,7 +131,7 @@ func (c *Command) socketWriter(ctx context.Context, ws *websocket.Conn) {
 		cmdPath := c.ProcessName()
 		if c.path == "" {
 			if cmdPath, err = exec.LookPath(c.name); err != nil {
-				internalError(ws, "lookpath c.name:", err)
+				someError(ws, "lookpath c.name:", err)
 				errCh <- err
 				return
 			}
@@ -135,7 +143,7 @@ func (c *Command) socketWriter(ctx context.Context, ws *websocket.Conn) {
 			Files: []*os.File{inr, outw, outw},
 		})
 		if err != nil {
-			internalError(ws, "start:", err)
+			someError(ws, "start:", err)
 			errCh <- err
 			return
 		}
@@ -146,7 +154,9 @@ func (c *Command) socketWriter(ctx context.Context, ws *websocket.Conn) {
 
 		c.socketReader(ws)
 
-		inw.Close()
+		if err := inw.Close(); err != nil {
+			log.Println(err)
+		}
 
 		if err := proc.Signal(os.Interrupt); err != nil {
 			log.Println("inter:", err)
@@ -210,8 +220,9 @@ func commandLogScanner(ctx context.Context, rc io.Reader, out chan string) {
 	}
 }
 
-func internalError(ws *websocket.Conn, msg string, err error) {
+func someError(ws *websocket.Conn, msg string, err error) {
 	log.Println(msg, err)
-	//ws.WriteMessage(websocket.TextMessage, []byte("Internal server error."))
-	ws.WriteMessage(websocket.TextMessage, []byte(err.Error()))
+	if err := ws.WriteMessage(websocket.TextMessage, []byte(err.Error())); err != nil {
+		log.Println(err)
+	}
 }

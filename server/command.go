@@ -47,10 +47,6 @@ func init() {
 			WithAlias("ping").
 			WithName("ping").
 			WithArgs("google.com"),
-		NewCommand().
-			WithAlias("counter").
-			WithName("counter").
-			WithPath("./"),
 	}
 }
 

@@ -10,7 +10,10 @@ NANOSTARTER=\
 my: nanostarter-$(OSARCH)
 
 $(NANOSTARTER):
+	cd ./client && npm run build
+	mv ./client/dist ./server/client #move to server folder for golang embedding
 	GOOS=$(word 2,$(subst -, ,$@)) GOARCH=$(word 3,$(subst -, ,$(subst .exe,,$@))) go build $(LDFLAGS) -o $@ ./$<
+	#rm -rf ./server/client
 
 clean:
 	rm -f nanostarter-*

@@ -1,0 +1,31 @@
+export const mdmSimpleCommands = [
+    "ProfileList",
+    "ProvisioningProfileList",
+    "CertificateList",
+    "SecurityInfo",
+    "RestartDevice",
+    "ShutDownDevice",
+    "StopMirroring",
+    "ClearRestrictionsPassword",
+    "UserList",
+    "LogOutUser",
+    "PlayLostModeSound",
+    "DisableLostMode",
+    "DeviceLocation",
+    "ManagedMediaList",
+    "DeviceConfigured",
+    "AvailableOSUpdates",
+    "NSExtensionMappings",
+    "OSUpdateStatus",
+    "EnableRemoteDesktop",
+    "DisableRemoteDesktop",
+    "ActivationLockBypassCode",
+    "ScheduleOSUpdateScan",
+]
+
+export const mdmReadOnlyCommands = [
+    "SecurityInfo",
+    "CertificateList",
+    "ProfileList",
+    "ProvisioningProfileList",
+]
