@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"embed"
 	"flag"
@@ -10,6 +11,7 @@ import (
 	"net/http"
 	"os/exec"
 	"regexp"
+	"runtime"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -45,6 +47,10 @@ func Run(ctx context.Context) error {
 	// replacing default port in index.html to *addr
 	templatePort := regexp.MustCompile(`(?i)window\.__PORT__\s?=\s?(?:"|'):\d{4,}(?:"|')`)
 	mainPage = templatePort.ReplaceAll(mainPage, []byte(fmt.Sprintf(`window.__PORT__ = "%s"`, *addr)))
+
+	//runtime.GOOS, runtime.GOARCH for default commands on client
+	bytes.Replace(mainPage, []byte(`"linux";`), []byte(fmt.Sprintf(`"%s";`, runtime.GOOS)), 1)
+	bytes.Replace(mainPage, []byte(`"amd64";`), []byte(fmt.Sprintf(`"%s";`, runtime.GOARCH)), 1)
 
 	mux := http.NewServeMux()
 
