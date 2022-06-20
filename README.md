@@ -1,5 +1,5 @@
 # Nanostarter
-UI helper tool for Nanomdm quickstart with SCEP server and Ngrok
+UI helper tool for [Nanomdm]https://github.com/micromdm/nanomdm quickstart with SCEP server and Ngrok
 ![gif](nanostarter.gif)
 
 ## Notes for using with default Nanostarter configs
