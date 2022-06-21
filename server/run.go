@@ -19,6 +19,7 @@ import (
 
 var (
 	addr     = flag.String("addr", ":8085", "http service address")
+	useEmbed = flag.Bool("embed", true, "serve static client with embed Go")
 	upgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
@@ -44,29 +45,56 @@ func Run(ctx context.Context) error {
 		log.Println(err)
 	}*/
 
-	// replacing default port in index.html to *addr
-	templatePort := regexp.MustCompile(`(?i)window\.__PORT__\s?=\s?(?:"|'):\d{4,}(?:"|')`)
-	mainPage = templatePort.ReplaceAll(mainPage, []byte(fmt.Sprintf(`window.__PORT__ = "%s"`, *addr)))
-
-	//runtime.GOOS, runtime.GOARCH for default commands on client
-	bytes.Replace(mainPage, []byte(`"linux";`), []byte(fmt.Sprintf(`"%s";`, runtime.GOOS)), 1)
-	bytes.Replace(mainPage, []byte(`"amd64";`), []byte(fmt.Sprintf(`"%s";`, runtime.GOARCH)), 1)
-
 	mux := http.NewServeMux()
 
-	//serving main page
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if _, err := w.Write(mainPage); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-	})
+	// -embed=true
+	// by default in production, we use embed mode.
+	// You need nothing to change just use make command:
+	// make my
+	// it will build static Vuejs to client/dist
+	// and copy client/dist to server/client
+	// embed server/client contents to var assets
+	// and index.html to var mainPage, using mainPage as template
+	//
+	// -embed=false
+	// use in dev mode, be sure to run app in default addr :8085
+	// in non linux system change in ./client/index.html :
+	// window.__GOOS__ = "linux";
+	// window.__GOARCH__ = "amd64";
+	// to:
+	// window.__GOOS__ = "darwin";
+	// window.__GOARCH__ = "arm64"; //if not amd64
+	//
+	// serving static content in ./client with:
+	// npm run dev
+	// in this case usually open client on http://localhost:3000
+	if *useEmbed {
+		// replacing default port in index.html to *addr
+		templatePort := regexp.MustCompile(`(?i)window\.__PORT__\s?=\s?(?:"|'):\d{4,}(?:"|')`)
+		mainPage = templatePort.ReplaceAll(mainPage, []byte(fmt.Sprintf(`window.__PORT__ = "%s"`, *addr)))
 
-	contentStatic, err := fs.Sub(assets, "client")
-	if err != nil {
-		log.Println(err)
+		//runtime.GOOS, runtime.GOARCH for default commands on client
+		bytes.Replace(mainPage, []byte(`"linux";`), []byte(fmt.Sprintf(`"%s";`, runtime.GOOS)), 1)
+		bytes.Replace(mainPage, []byte(`"amd64";`), []byte(fmt.Sprintf(`"%s";`, runtime.GOARCH)), 1)
+
+		//serving main page
+		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			if _, err := w.Write(mainPage); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+		})
+
+		contentStatic, err := fs.Sub(assets, "client")
+		if err != nil {
+			log.Println(err)
+		}
+		//serving assets: *.js, *.css and other
+		mux.Handle("/assets/", http.FileServer(http.FS(contentStatic))) //http.FileServer(http.Dir("./client/dist")))
+	} else {
+		// in -embed=false mode serve all static content from ./client/dist
+		// if for some reason you used npm run build, and don't want to serve static with npm run dev
+		mux.Handle("/", http.FileServer(http.Dir("./client/dist"))) //http.FileServer(http.Dir("./client/dist")))
 	}
-	//serving assets: *.js, *.css and other
-	mux.Handle("/assets/", http.FileServer(http.FS(contentStatic))) //http.FileServer(http.Dir("./client/dist")))
 
 	//each command has its own websocket handler
 	for _, cmnd := range logCommands {
