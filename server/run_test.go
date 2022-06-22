@@ -1,9 +1,13 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 )
@@ -38,3 +42,20 @@ func TestRunContext(t *testing.T) {
 }
 
 // go test -run TestRunContext
+
+// TestSimpleCommandHandler tests simple command handler
+// send command to "list" this folder's content, it should contain current test file name
+func TestSimpleCommandHandler(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/command?cmd="+url.QueryEscape("ls -lh"), nil)
+	w := httptest.NewRecorder()
+	simpleCommandHandler(w, req)
+	res := w.Result()
+	defer res.Body.Close()
+	data, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		t.Errorf("expected error to be nil got %v", err)
+	}
+	if !bytes.Contains(data, []byte("run_test.go")) {
+		t.Error("expected to find run_test.go in folder content")
+	}
+}

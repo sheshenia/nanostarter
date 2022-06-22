@@ -104,30 +104,7 @@ func Run(ctx context.Context) error {
 
 	//serving common Log simple commands terminal
 	log.Println("http  endpoint     : /command")
-	mux.HandleFunc("/command", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-		if r.Method == "OPTIONS" {
-			return
-		}
-
-		cmdText := r.FormValue("cmd")
-		if cmdText == "" {
-			http.Error(w, "no command to exec", http.StatusBadRequest)
-			return
-		}
-		log.Println("try to parse, cmdText:", cmdText)
-		cmd := NewCommandFromString(cmdText)
-
-		c := exec.CommandContext(r.Context(), "bash", "-c", cmd.String())
-		c.Stdout = w
-		c.Stderr = w
-		if err := c.Run(); err != nil {
-			log.Println(err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	})
+	mux.HandleFunc("/command", simpleCommandHandler)
 
 	server := &http.Server{
 		Addr:    *addr,
@@ -144,6 +121,36 @@ func Run(ctx context.Context) error {
 	}()
 
 	return server.ListenAndServe()
+}
+
+// simpleCommandHandler handles simple linux commands that don't require logging
+func simpleCommandHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	cmdText := r.FormValue("cmd")
+	if cmdText == "" {
+		http.Error(w, "no command to exec", http.StatusBadRequest)
+		return
+	}
+	log.Println("try to parse, cmdText:", cmdText)
+	cmd := NewCommandFromString(cmdText)
+
+	// give 3 seconds to finish the command
+	ctx, cancel := context.WithTimeout(r.Context(), time.Second*3)
+	defer cancel()
+
+	c := exec.CommandContext(ctx, "bash", "-c", cmd.String())
+	c.Stdout = w
+	c.Stderr = w
+	if err := c.Run(); err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 const (
