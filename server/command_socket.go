@@ -128,7 +128,7 @@ func (c *Command) socketWriter(ctx context.Context, ws *websocket.Conn) {
 			return
 		}
 
-		cmdPath := c.ProcessName()
+		cmdPath := c.processName()
 		if c.path == "" {
 			if cmdPath, err = exec.LookPath(c.name); err != nil {
 				someError(ws, "lookpath c.name:", err)
@@ -139,7 +139,7 @@ func (c *Command) socketWriter(ctx context.Context, ws *websocket.Conn) {
 		args := append([]string{cmdPath}, c.args...)
 
 		proc, err := os.StartProcess(args[0], args, &os.ProcAttr{
-			Dir:   c.ProcessDir(),
+			Dir:   c.processDir(),
 			Files: []*os.File{inr, outw, outw},
 		})
 		if err != nil {
