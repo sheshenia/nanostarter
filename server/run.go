@@ -18,8 +18,7 @@ import (
 )
 
 var (
-	addr     = flag.String("addr", ":8085", "http service address")
-	useEmbed = flag.Bool("embed", true, "serve static client with embed Go")
+	version  = "unknown" // overridden by -ldflags -X
 	upgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
@@ -36,12 +35,22 @@ var assets embed.FS
 var mainPage []byte
 
 func Run(ctx context.Context) error {
+	var (
+		flAddr     = flag.String("addr", ":8085", "http service address")
+		flUseEmbed = flag.Bool("embed", true, "serve static client with embed Go")
+		flVersion  = flag.Bool("version", false, "print version")
+	)
 	flag.Parse()
 
+	if *flVersion {
+		fmt.Println(version)
+		return nil
+	}
+
 	//output address in blue color
-	colored := fmt.Sprintf("\x1b[%dm%s%s\x1b[0m", 34, "http://localhost", *addr)
+	colored := fmt.Sprintf("\x1b[%dm%s%s\x1b[0m", 34, "http://localhost", *flAddr)
 	log.Println("Serving Nanostarter:", colored)
-	/*if _, err := exec.Command("bash", "-c", `sed -i -e 's/__PORT__\s\?=\s\?":[0-9]\{4\}"/__PORT__ = "`+*addr+`"/' ./client/dist/index.html`).Output(); err != nil {
+	/*if _, err := exec.Command("bash", "-c", `sed -i -e 's/__PORT__\s\?=\s\?":[0-9]\{4\}"/__PORT__ = "`+*flAddr+`"/' ./client/dist/index.html`).Output(); err != nil {
 		log.Println(err)
 	}*/
 
@@ -57,7 +66,7 @@ func Run(ctx context.Context) error {
 	// and index.html to var mainPage, using mainPage as template
 	//
 	// -embed=false
-	// use in dev mode, be sure to run app in default addr :8085
+	// use in dev mode, be sure to run app in default flAddr :8085
 	// in non linux system change in ./client/index.html :
 	// window.__GOOS__ = "linux";
 	// window.__GOARCH__ = "amd64";
@@ -68,10 +77,10 @@ func Run(ctx context.Context) error {
 	// serving static content in ./client with:
 	// npm run dev
 	// in this case usually open client on http://localhost:3000
-	if *useEmbed {
-		// replacing default port in index.html to *addr
+	if *flUseEmbed {
+		// replacing default port in index.html to *flAddr
 		templatePort := regexp.MustCompile(`(?i)window\.__PORT__\s?=\s?(?:"|'):\d{4,}(?:"|')`)
-		mainPage = templatePort.ReplaceAll(mainPage, []byte(fmt.Sprintf(`window.__PORT__ = "%s"`, *addr)))
+		mainPage = templatePort.ReplaceAll(mainPage, []byte(fmt.Sprintf(`window.__PORT__ = "%s"`, *flAddr)))
 
 		//runtime.GOOS, runtime.GOARCH for default commands on client
 		bytes.Replace(mainPage, []byte(`"linux";`), []byte(fmt.Sprintf(`"%s";`, runtime.GOOS)), 1)
@@ -107,7 +116,7 @@ func Run(ctx context.Context) error {
 	mux.HandleFunc("/command", simpleCommandHandler)
 
 	server := &http.Server{
-		Addr:    *addr,
+		Addr:    *flAddr,
 		Handler: mux,
 	}
 

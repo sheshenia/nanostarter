@@ -1,5 +1,6 @@
 VERSION = $(shell git describe --tags --always --dirty)
-LDFLAGS=-ldflags "-X main.version=$(VERSION)"
+#go tool nm ./nanostarter-linux-amd64 | grep version #to get the path of the version variable
+LDFLAGS=-ldflags "-X 'github.com/sheshenia/nanostarter/server.version=$(VERSION)'"
 OSARCH=$(shell go env GOHOSTOS)-$(shell go env GOHOSTARCH)
 
 NANOSTARTER=\
@@ -14,7 +15,6 @@ $(NANOSTARTER):
 	rm -rf ./server/client
 	mv ./client/dist ./server/client #move to server folder for golang embedding
 	GOOS=$(word 2,$(subst -, ,$@)) GOARCH=$(word 3,$(subst -, ,$(subst .exe,,$@))) go build $(LDFLAGS) -o $@ ./$<
-	#rm -rf ./server/client
 
 clean:
 	rm -f nanostarter-*
