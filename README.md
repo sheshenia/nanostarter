@@ -61,6 +61,15 @@ window.__GOARCH__ = "arm64"; //if not amd64
 ```
 The changes above are not crucial, but the default Nanomdm & SCEP commands will be correct.
 
+### Fast start in dev mode client and server
+Open terminal and type to start in dev mode client
+
+`make dev_c`
+
+Open another terminal and type to start in dev mode server
+
+`make dev_s`
+
 ### Configure "Steps" commands
 <p align="center">
   <img src="change_configs.gif">
