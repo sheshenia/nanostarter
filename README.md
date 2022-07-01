@@ -70,6 +70,16 @@ Open another terminal and type to start in dev mode server
 
 `make dev_s`
 
+### Notes for run and testing in dev mode
+Before run in dev mode you should manually create in project structure three
+folders, and do steps from `Notes for using with default Nanostarter configs` section
+```
+certificates
+nanomdm
+scep
+```
+You can also copy this structure from internal/release_template folder
+
 ### Configure "Steps" commands
 <p align="center">
   <img src="change_configs.gif">

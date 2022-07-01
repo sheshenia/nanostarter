@@ -26,8 +26,28 @@ dev_s:
 	go run . -embed false
 
 clean:
-	rm -f nanostarter-*
+	rm -rf nanostarter-*
 
 test:
 	go test -v -cover -race ./...
 
+nanostarter-%-$(VERSION).zip: nanostarter-%
+	# creating folder with GOOS-VERSION
+	mkdir -p nanostarter-$(*)-$(VERSION)
+	# move binary to created folder $(*) = % in command
+	mv nanostarter-$(*) nanostarter-$(*)-$(VERSION)
+	# copy release template
+	cp -r ./internal/release_template/* ./nanostarter-$(*)-$(VERSION)
+	# replace command examples to correct GOOS and GOARCH
+	sed -i -e 's/linux-amd64/$(*)/g' ./nanostarter-$(*)-$(VERSION)/BEFORE_START.md
+	# move release folder structure to archive
+	cd ./nanostarter-$(*)-$(VERSION) && zip -m ../$@ *
+	# delete release folder
+	rm -r ./nanostarter-$(*)-$(VERSION)
+
+release: \
+	nanostarter-linux-amd64-$(VERSION).zip \
+	nanostarter-darwin-amd64-$(VERSION).zip \
+	nanostarter-darwin-arm64-$(VERSION).zip
+
+.PHONY: my $(NANOSTARTER) clean release test dev_c dev_s
